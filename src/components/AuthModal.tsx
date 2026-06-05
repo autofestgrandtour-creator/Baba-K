@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState } from 'react';
-import { usePlatform } from '../context/PlatformContext';
+import { usePlatform } from '@/context/PlatformContext';
 import { X, Mail, Lock, User, CheckCircle, ShieldCheck, KeyRound } from 'lucide-react';
 
 interface AuthModalProps {
@@ -18,7 +20,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'Buyer' | 'Organizer' | 'Admin'>('Buyer');
   
-  // OTP simulation & states
+  // OTP simulation
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -26,8 +28,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // 🔴 LEAD FIX: Wired to /api/auth/login
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -35,22 +36,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setError('Please provide Email and Password.');
       return;
     }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please provide a valid email structure.');
+      return;
+    }
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid credentials');
-      }
-
-      // Pass the real database user object to the frontend context
-      login(data.user); 
+      login(email, role);
       setSuccessMsg('Logged in successfully!');
       setTimeout(() => {
         setSuccessMsg('');
@@ -69,12 +61,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setError('Please fill out all registration fields.');
       return;
     }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Invalid email formula.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must contain at least 6 characters.');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    // Move to mock OTP verification before we hit the DB
+    // Move to mock OTP verification
     setMode('otp');
     startOtpCountdown();
   };
@@ -98,14 +98,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     nextOtp[index] = val.slice(-1);
     setOtpCode(nextOtp);
 
+    // Auto focus next box
     if (val && index < 5) {
       const nextInput = document.getElementById(`otp-input-${index + 1}`);
       nextInput?.focus();
     }
   };
 
-  // 🔴 LEAD FIX: Wired to /api/auth/register
-  const handleOtpVerify = async () => {
+  const handleOtpVerify = () => {
     setError('');
     const fullCode = otpCode.join('');
     
@@ -114,28 +114,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
+    // Accept "123456" or any code for testing
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          full_name: fullName, 
-          role: role.toLowerCase() // Ensure it matches DB enum 'buyer' | 'organizer'
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
+      signup(fullName, email, role);
       setSuccessMsg('Security code verified! Account activated.');
       setTimeout(() => {
         setSuccessMsg('');
-        setMode('login'); // Push them to log in with their new credentials
+        setMode('login');
+        onClose();
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Verification failed. Try again.');
@@ -187,6 +173,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {/* --- LOGIN FORM --- */}
         {mode === 'login' && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase font-mono tracking-wider">Default Sandbox Persona</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['Buyer', 'Organizer'] as const).map((r) => (
+                  <button
+                    type="button"
+                    key={r}
+                    onClick={() => setRole(r)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium text-center border transition-all cursor-pointer ${
+                      role === r
+                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 font-semibold'
+                        : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase font-mono tracking-wider">Email Address</label>
               <div className="relative">
@@ -365,7 +371,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <KeyRound className="h-5 w-5" />
               </span>
               <p className="text-xs font-mono text-zinc-400 mt-2">
-                Type <kbd className="text-emerald-400 font-bold bg-zinc-950 px-1.5 py-0.5 rounded">123456</kbd> to activate credentials
+                Type <kbd className="text-emerald-400 font-bold bg-zinc-950 px-1.5 py-0.5 rounded">123456</kbd> to activate sandbox credentials
               </p>
             </div>
 
@@ -380,6 +386,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   value={digit}
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => {
+                    // Backspace returns to previous input
                     if (e.key === 'Backspace' && !digit && idx > 0) {
                       document.getElementById(`otp-input-${idx - 1}`)?.focus();
                     }
@@ -395,11 +402,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               onClick={handleOtpVerify}
               className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg transition-all cursor-pointer"
             >
-              Verify Code & Setup Account
+              Verify Code & Setup Sandbox
             </button>
+
+            {/* Countdown timer & Resend keys */}
+            <div className="flex justify-between items-center text-xs text-zinc-500">
+              {otpTimer > 0 ? (
+                <span>Re-send code in <span className="text-emerald-400">{otpTimer}s</span></span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startOtpCountdown}
+                  className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                >
+                  Resend verification code
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setMode('signup')}
+                className="hover:text-zinc-300 font-medium cursor-pointer"
+              >
+                Change details
+              </button>
+            </div>
           </div>
         )}
+
       </div>
     </div>
   );
 };
+
