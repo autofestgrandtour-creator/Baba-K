@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePlatform } from '@/context/PlatformContext';
-import { X, Mail, Lock, User, CheckCircle, ShieldCheck, KeyRound } from 'lucide-react';
+import { X, Mail, Lock, User, CheckCircle, ShieldCheck } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const { login, signup } = usePlatform();
-  const [mode, setMode] = useState<'login' | 'signup' | 'otp'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -20,15 +20,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'Buyer' | 'Organizer' | 'Admin'>('Buyer');
   
-  // OTP simulation
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [otpTimer, setOtpTimer] = useState(59);
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -42,7 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
 
     try {
-      login(email, role);
+      await login(email, password);
       setSuccessMsg('Logged in successfully!');
       setTimeout(() => {
         setSuccessMsg('');
@@ -53,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -74,57 +71,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Move to mock OTP verification
-    setMode('otp');
-    startOtpCountdown();
-  };
-
-  const startOtpCountdown = () => {
-    setOtpTimer(59);
-    const interval = setInterval(() => {
-      setOtpTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleOtpChange = (index: number, val: string) => {
-    if (isNaN(Number(val))) return;
-    const nextOtp = [...otpCode];
-    nextOtp[index] = val.slice(-1);
-    setOtpCode(nextOtp);
-
-    // Auto focus next box
-    if (val && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleOtpVerify = () => {
-    setError('');
-    const fullCode = otpCode.join('');
-    
-    if (fullCode.length < 6) {
-      setError('Please enter the full 6-digit verification code.');
-      return;
-    }
-
-    // Accept "123456" or any code for testing
     try {
-      signup(fullName, email, role);
-      setSuccessMsg('Security code verified! Account activated.');
+      await signup(fullName, email, password, role);
+      setSuccessMsg('Account created successfully!');
       setTimeout(() => {
         setSuccessMsg('');
-        setMode('login');
         onClose();
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
-      setError(err.message || 'Verification failed. Try again.');
+      setError(err.message || 'Registration failed.');
     }
   };
 
@@ -347,7 +302,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="submit"
               className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
             >
-              Generate Verification Code
+              Create Account
             </button>
 
             <div className="text-center mt-4">
@@ -361,72 +316,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </button>
             </div>
           </form>
-        )}
-
-        {/* --- OTP VERIFICATION MODAL GRAPHIC --- */}
-        {mode === 'otp' && (
-          <div className="space-y-5">
-            <div className="text-center">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-emerald-400 animate-bounce">
-                <KeyRound className="h-5 w-5" />
-              </span>
-              <p className="text-xs font-mono text-zinc-400 mt-2">
-                Type <kbd className="text-emerald-400 font-bold bg-zinc-950 px-1.5 py-0.5 rounded">123456</kbd> to activate sandbox credentials
-              </p>
-            </div>
-
-            {/* Code Inputs */}
-            <div className="flex justify-center gap-2">
-              {otpCode.map((digit, idx) => (
-                <input
-                  key={idx}
-                  id={`otp-input-${idx}`}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(idx, e.target.value)}
-                  onKeyDown={(e) => {
-                    // Backspace returns to previous input
-                    if (e.key === 'Backspace' && !digit && idx > 0) {
-                      document.getElementById(`otp-input-${idx - 1}`)?.focus();
-                    }
-                  }}
-                  className="h-12 w-12 rounded-xl border border-zinc-800 bg-zinc-950 text-center text-lg font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              ))}
-            </div>
-
-            {/* Verification Button */}
-            <button
-              id="otp-verify-btn"
-              onClick={handleOtpVerify}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg transition-all cursor-pointer"
-            >
-              Verify Code & Setup Sandbox
-            </button>
-
-            {/* Countdown timer & Resend keys */}
-            <div className="flex justify-between items-center text-xs text-zinc-500">
-              {otpTimer > 0 ? (
-                <span>Re-send code in <span className="text-emerald-400">{otpTimer}s</span></span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startOtpCountdown}
-                  className="text-emerald-400 hover:underline font-semibold cursor-pointer"
-                >
-                  Resend verification code
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setMode('signup')}
-                className="hover:text-zinc-300 font-medium cursor-pointer"
-              >
-                Change details
-              </button>
-            </div>
-          </div>
         )}
 
       </div>

@@ -152,9 +152,9 @@ export const SellEvent: React.FC<SellEventProps> = ({ onSuccess }) => {
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     try {
-      addEvent({
+      await addEvent({
         title,
         description: description || 'No core breakdown details provided. Standby for agenda notifications.',
         date,

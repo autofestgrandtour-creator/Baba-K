@@ -30,7 +30,7 @@ export const MarketplaceView: React.FC = () => {
     return { ticket, event };
   }, [tickets, events, selectedResaleId]);
 
-  const handleBuyResale = (e: React.FormEvent) => {
+  const handleBuyResale = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr('');
 
@@ -42,16 +42,13 @@ export const MarketplaceView: React.FC = () => {
 
     setPayState('processing');
 
-    // Simulate instant peer checkout
-    setTimeout(() => {
-      try {
-        buyResaleTicket(selectedResaleId, buyerName, buyerEmail);
-        setPayState('success');
-      } catch (err: any) {
-        setErr('Error clearing ownership registry.');
-        setPayState('idle');
-      }
-    }, 2500);
+    try {
+      await buyResaleTicket(selectedResaleId, buyerName, buyerEmail);
+      setPayState('success');
+    } catch (err: any) {
+      setErr('Error clearing ownership registry.');
+      setPayState('idle');
+    }
   };
 
   const handleSuccessClose = () => {

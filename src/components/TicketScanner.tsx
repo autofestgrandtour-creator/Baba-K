@@ -19,16 +19,15 @@ export const TicketScanner: React.FC<TicketScannerProps> = ({ onClose }) => {
   // Filter out tickets that exist to allow easy shortcut scanning simulation
   const mockScanShortcuts = tickets.slice(0, 5); // display up to 5 tickets for swift sandbox testing
 
-  const handleScanSubmit = (codeOrSerial: string) => {
+  const handleScanSubmit = async (codeOrSerial: string) => {
     if (!codeOrSerial.trim()) return;
-    
+
     setScanStatus('scanning');
     setActiveScannedTicket(null);
     setScanMessage('');
 
-    // Simulate scanning camera latency of 900ms
-    setTimeout(() => {
-      const result = validateTicket(codeOrSerial);
+    setTimeout(async () => {
+      const result = await validateTicket(codeOrSerial);
       if (result.success) {
         setScanStatus('success');
         setScanMessage(result.message);

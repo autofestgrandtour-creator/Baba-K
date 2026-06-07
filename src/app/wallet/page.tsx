@@ -45,7 +45,7 @@ export const WalletView: React.FC = () => {
     return { ticket, event };
   }, [tickets, events, resaleTicketId]);
 
-  const handleListResale = (e: React.FormEvent) => {
+  const handleListResale = async (e: React.FormEvent) => {
     e.preventDefault();
     setResaleError('');
 
@@ -57,7 +57,7 @@ export const WalletView: React.FC = () => {
       return;
     }
 
-    listTicketForResale(resaleTicketId, priceNum);
+    await listTicketForResale(resaleTicketId, priceNum);
     setResaleSuccess(true);
     setTimeout(() => {
       setResaleSuccess(false);

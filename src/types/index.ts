@@ -1,4 +1,5 @@
 export interface TicketTier {
+  id?: string;
   name: string;
   price: number;
   capacity: number;
@@ -31,6 +32,7 @@ export interface EventItem {
 }
 
 export interface UserSession {
+  id?: string;
   email: string;
   fullName: string;
   role: 'Buyer' | 'Organizer' | 'Admin';

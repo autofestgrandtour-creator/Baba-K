@@ -24,6 +24,7 @@ export const PremiumTicket: React.FC<PremiumTicketProps> = ({
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
+  const [shadowOffset, setShadowOffset] = useState({ x: 0, y: 15, blur: 30, opacity: 0.45 });
 
   // Handle high-performance 3D mouse parallax hover effect
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -38,14 +39,23 @@ export const PremiumTicket: React.FC<PremiumTicketProps> = ({
     const normX = (x / rect.width) - 0.5;
     const normY = (y / rect.height) - 0.5;
     
-    // Calculate rotation: max 15 degrees
+    // Calculate rotation: max 18 degrees
     setRotateX(-normY * 18);
     setRotateY(normX * 18);
     
     // Calculate glare circle relative coords
     const glareX = (x / rect.width) * 100;
     const glareY = (y / rect.height) * 100;
-    setGlare({ x: glareX, y: glareY, opacity: 0.35 });
+    setGlare({ x: glareX, y: glareY, opacity: 0.16 }); // Reduced glare to prevent washing out ticket text
+
+    // Calculate dynamic 3D depth-of-field shadow shift opposite to tilt movement
+    const shadowX = -normX * 28;
+    const shadowY = (-normY * 28) + 16; // Added realistic vertical bias representing overhead lighting
+    const tiltAmount = Math.sqrt(normX * normX + normY * normY);
+    const shadowBlur = 24 + (tiltAmount * 36); // Shadow blurs out as the page boundary stretches
+    const shadowOpacity = 0.45 + (tiltAmount * 0.15); // Dynamic contrast change
+    
+    setShadowOffset({ x: shadowX, y: shadowY, blur: shadowBlur, opacity: shadowOpacity });
   };
 
   const handleMouseLeave = () => {
@@ -54,6 +64,7 @@ export const PremiumTicket: React.FC<PremiumTicketProps> = ({
     setRotateX(0);
     setRotateY(0);
     setGlare(prev => ({ ...prev, opacity: 0 }));
+    setShadowOffset({ x: 0, y: 15, blur: 30, opacity: 0.45 });
   };
 
   const handleDownloadPNG = (e: React.MouseEvent) => {
@@ -279,8 +290,9 @@ export const PremiumTicket: React.FC<PremiumTicketProps> = ({
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
-          transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1, 1, 1)`,
-          transition: rotateX === 0 ? 'all 0.5s ease-out' : 'none',
+          transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
+          boxShadow: `${shadowOffset.x}px ${shadowOffset.y}px ${shadowOffset.blur}px rgba(0, 0, 0, ${shadowOffset.opacity}), 0 0 1px rgba(255, 255, 255, 0.1)`,
+          transition: rotateX === 0 ? 'all 0.5s ease-out' : 'transform 0.05s linear, box-shadow 0.05s linear',
           transformStyle: 'preserve-3d'
         }}
         className="relative w-full max-w-sm rounded-2xl md:min-w-[340px] text-white overflow-hidden hologram-card border border-white/10 hover:border-neon-cyan shadow-2xl transition-all cursor-grab"
@@ -297,7 +309,7 @@ export const PremiumTicket: React.FC<PremiumTicketProps> = ({
         />
 
         {/* --- FRONT OF THE INTERACTIVE METROPOLIS TICKET --- */}
-        <div className="p-5 flex flex-col justify-between h-[450px] relative bg-[#0D0D0E]/90">
+        <div className="p-5 flex flex-col justify-between h-[450px] relative bg-[#211E1D]">
           
           {/* Dynamic Check-in stamp overlay */}
           {ticket.isValidated && (

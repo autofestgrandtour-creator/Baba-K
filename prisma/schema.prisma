@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------
+// 1. USER SYSTEM (Buyers, Organizers, Admins)
+// ------------------------------------------------------
+model User {
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  fullName            String
+  role                String   // 'Buyer' | 'Organizer' | 'Admin'
+  isVerifiedOrganizer Boolean  @default(false)
+  customLogoUrl       String?
+  isSuspended         Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  // Relations
+  organizedEvents  Event[]           @relation("OrganizerEvents")
+  purchasedTickets PurchasedTicket[] @relation("UserTickets")
+  reviews          Review[]          @relation("UserReviews")
+}
+
+// ------------------------------------------------------
+// 2. EVENT SYSTEM
+// ------------------------------------------------------
+model Event {
+  id             String   @id @default(uuid())
+  title          String
+  description    String
+  date           String
+  time           String
+  venue          String
+  flyerUrl       String
+  isPromoted     Boolean  @default(false)
+  state          String   @default("active") // 'active' | 'disabled' | 'pending'
+  category       String
+  createdAt      DateTime @default(now())
+  
+  // Ad Customizer Settings (Stored securely as JSON)
+  adCustomizer   Json?
+
+  // Relations
+  organizerEmail String
+  organizer      User              @relation("OrganizerEvents", fields: [organizerEmail], references: [email])
+  ticketsConfig  TicketTier[]      @relation("EventTiers")
+  soldTickets    PurchasedTicket[] @relation("EventSoldTickets")
+  reviews        Review[]          @relation("EventReviews")
+}
+
+// ------------------------------------------------------
+// 3. TICKET TIER CONFIGURATION (e.g. VIP, Standard)
+// ------------------------------------------------------
+model TicketTier {
+  id         String @id @default(uuid())
+  name       String
+  price      Float
+  capacity   Int
+  visibility String @default("Public") // 'Public' | 'Invite Only'
+  soldCount  Int    @default(0)
+
+  // Relations
+  eventId    String
+  event      Event  @relation("EventTiers", fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------
+// 4. PURCHASED TICKETS & RESALE LEDGER
+// ------------------------------------------------------
+model PurchasedTicket {
+  id             String    @id @default(uuid())
+  ticketTierName String
+  buyerName      String
+  qrCode         String    @unique
+  purchaseDate   DateTime  @default(now())
+  pricePaid      Float
+  feePaid        Float
+  serialNumber   String    @unique
+  isReselling    Boolean   @default(false)
+  resalePrice    Float?
+  paymentGateway String
+  isValidated    Boolean   @default(false)
+  validatedAt    DateTime?
+
+  // Relations
+  eventId        String
+  event          Event     @relation("EventSoldTickets", fields: [eventId], references: [id], onDelete: Cascade)
+  buyerEmail     String
+  buyer          User      @relation("UserTickets", fields: [buyerEmail], references: [email])
+}
+
+// ------------------------------------------------------
+// 5. RATINGS & REVIEWS (Cowrie Rating System)
+// ------------------------------------------------------
+model Review {
+  id         String   @id @default(uuid())
+  userName   String
+  rating     Int
+  comment    String
+  timestamp  DateTime @default(now())
+
+  // Relations
+  eventId    String
+  event      Event    @relation("EventReviews", fields: [eventId], references: [id], onDelete: Cascade)
+  userEmail  String
+  user       User     @relation("UserReviews", fields: [userEmail], references: [email])
+}
+
+// ------------------------------------------------------
+// 6. SYSTEM PLATFORM SETTINGS
+// ------------------------------------------------------
+model SystemSettings {
+  id                Int   @id @default(1)
+  flatFee           Float @default(250) // NGN
+  promotionPrice    Float @default(5000) // NGN
+  supportedGateways Json  // e.g. { paystack: true, opay: false, alatpay: false }
+}

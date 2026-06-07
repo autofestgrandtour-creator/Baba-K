@@ -14,17 +14,16 @@ interface CheckoutDrawerProps {
 }
 
 export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose, event, selectedTier, onSuccess }) => {
-  const { currentUser, settings, buyTicket } = usePlatform();
+  const { currentUser, settings, initializeCheckout } = usePlatform();
   const [qty, setQty] = useState(1);
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [selectedGateway, setSelectedGateway] = useState<'paystack' | 'opay' | 'alatpay'>('paystack');
   const [error, setError] = useState('');
   
-  // Payment Simulation states
-  const [paymentState, setPaymentState] = useState<'idle' | 'processing' | 'success'>('idle');
+  // Payment UI states
+  const [paymentState, setPaymentState] = useState<'idle' | 'processing'>('idle');
   const [processingStep, setProcessingStep] = useState('');
-  const [soldTicketsSerials, setSoldTicketsSerials] = useState<string[]>([]);
 
   // Pre-fill fields if user is logged in
   useEffect(() => {
@@ -47,7 +46,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
   const totalPlatformFees = settings.flatFee * qty;
   const grandTotal = totalTicketPrice + totalPlatformFees;
 
-  const handlePay = (e: React.FormEvent) => {
+  const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -59,38 +58,26 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
       setError('Attendee email format is incorrect.');
       return;
     }
+    if (!currentUser) {
+      setError('Please sign in to complete this purchase.');
+      return;
+    }
+    if (selectedGateway !== 'paystack') {
+      setError('Live checkout currently supports Paystack only.');
+      return;
+    }
 
-    // Step 1: Transition to Processing Overlay
     setPaymentState('processing');
-    setProcessingStep(`Initializing secure handshake with ${selectedGateway.toUpperCase()}...`);
+    setProcessingStep('Creating payment session...');
 
-    // Simulate Paystack / OPay / AlatPay processing states without leaving the page
-    setTimeout(() => {
-      setProcessingStep('Sending callback instructions to Paystack Webhook servers...');
-    }, 1200);
-
-    setTimeout(() => {
-      setProcessingStep('Verifying platform transaction limits and ticket counts...');
-    }, 2400);
-
-    setTimeout(() => {
-      try {
-        const generated = buyTicket(
-          event.id,
-          selectedTier.name,
-          qty,
-          buyerName,
-          buyerEmail,
-          selectedGateway
-        );
-        
-        setSoldTicketsSerials(generated.map(t => t.serialNumber));
-        setPaymentState('success');
-      } catch (err: any) {
-        setError(err.message || 'Payment processor returned an issue. Please try again.');
-        setPaymentState('idle');
-      }
-    }, 3800);
+    try {
+      const { authorization_url } = await initializeCheckout(event.id, selectedTier.name, selectedTier.id);
+      window.open(authorization_url, '_blank');
+      setProcessingStep('Paystack checkout opened in a new tab. Complete your payment there.');
+    } catch (err: any) {
+      setError(err.message || 'Payment initialization failed. Please try again.');
+      setPaymentState('idle');
+    }
   };
 
   const handleCloseAndRefresh = () => {
@@ -290,59 +277,11 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
               <div className="h-16 w-16 rounded-full border-t-2 border-neon-cyan border-r-2 border-transparent animate-spin" />
               <Loader2 className="h-6 w-6 text-neon-cyan animate-pulse absolute top-5 left-5" />
             </div>
-            <h4 className="font-display text-lg font-black text-white uppercase tracking-wide mt-4">Simulating Local Settlement</h4>
+            <h4 className="font-display text-lg font-black text-white uppercase tracking-wide mt-4">Redirecting to Paystack</h4>
             <div className="text-xs font-mono text-white/60 bg-black px-4 py-3 rounded-xl border border-white/5 max-w-sm leading-relaxed">
-              {processingStep}
+              {processingStep || 'A secure checkout session has been opened in a new window.'}
             </div>
-            <span className="text-[10px] text-white/30 font-mono tracking-wider">Please do not refresh, close, or leave. Handbook keys are rotating.</span>
-          </div>
-        )}
-
-        {/* --- TRANSACTION COMPLETED SUCCESS OVERLAY SCREEN (ZERO REDIRECT) --- */}
-        {paymentState === 'success' && (
-          <div className="flex-grow flex flex-col items-center justify-center text-center p-6 space-y-6">
-            <div className="h-16 w-16 rounded-full bg-neon-cyan/15 border-2 border-neon-cyan text-neon-cyan flex items-center justify-center animate-bounce">
-              <CheckCircle className="h-8 w-8" />
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-display text-xl font-black text-white uppercase tracking-wider">Pass Secured!</h4>
-              <p className="text-xs text-white/50 leading-relaxed font-sans max-w-xs mx-auto">
-                Payment synchronized with the Nigerian ledger. {qty} genuine serial codes registered under your profile.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#050505] border border-white/5 shadow-2xl w-full max-w-xs space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono text-neon-cyan border-b border-white/5 pb-2">
-                <Ticket className="h-4 w-4" />
-                <span className="font-black uppercase tracking-widest text-[9px]">Verified Tickets Generated</span>
-              </div>
-              
-              <div className="space-y-1.5 text-left font-mono text-[10.5px]">
-                {soldTicketsSerials.map((serial, index) => (
-                  <div key={index} className="flex justify-between text-white/60">
-                    <span>Pass #{index + 1}:</span>
-                    <span className="text-white font-black">{serial}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between border-t border-white/5 pt-1.5 text-white/40 text-[10px]">
-                  <span>Payment Gateway:</span>
-                  <span className="text-[#00F2FF] uppercase font-bold">{selectedGateway}</span>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-white/40 max-w-xs mx-auto leading-relaxed">
-              Pass tokens are now live on Nigeria's cloud network. Click below to inspect your newly minted passes in your digital wallet.
-            </p>
-
-            <button
-              onClick={handleCloseAndRefresh}
-              className="w-full max-w-xs py-3.5 rounded-2xl bg-white hover:bg-neutral-200 text-black text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-2xl"
-            >
-              <span>View Personal Wallet</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+            <span className="text-[10px] text-white/30 font-mono tracking-wider">If the Paystack page does not appear, please check your browser pop-up settings.</span>
           </div>
         )}
 

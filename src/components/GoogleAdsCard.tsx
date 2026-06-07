@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Sparkles, TrendingUp } from 'lucide-react';
+import { ExternalLink, Sparkles, TrendingUp, BarChart3, RefreshCw, Layers, ShieldCheck, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlatform } from '@/context/PlatformContext';
+
 interface AdCampaign {
   id: string;
   title: string;

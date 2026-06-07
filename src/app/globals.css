@@ -1,15 +1,35 @@
+/* 1. ALL @imports MUST be at the absolute top */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+/* 2. Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3. Your Custom CSS Variables and Themes */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --neon-cyan: #9E7E53;
+  --neon-pink: #F5EFE4;
+  --bg-dark: #161413;
+  --card-bg: #211E1D;
+  --text-color: #F5EFE4;
+  --text-muted: rgba(245, 239, 228, 0.75);
+  --border-color: rgba(158, 126, 83, 0.45);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Cinzel", "Cormorant+Garamond", serif;
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-pink: var(--neon-pink);
+  --color-bg-dark: var(--bg-dark);
+  --color-card-bg: var(--card-bg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,8 +39,319 @@
   }
 }
 
+html, body {
+  background-color: #161413;
+  color-scheme: dark;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Base Body Override */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: transparent;
+  color: var(--text-color);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Luxury Royal/Vintage Typography Mapping */
+h1, h2, h3, .font-display {
+  font-family: "Cinzel", "Cormorant Garamond", Georgia, serif !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  font-weight: 700;
+}
+
+h4, h5, .premium-subtitle {
+  font-family: "Cormorant Garamond", Georgia, serif !important;
+  letter-spacing: 0.05em !important;
+  font-style: italic;
+}
+
+/* Metadata upper tracked subheadlines & Mono override */
+.font-mono, 
+[class*="font-mono"],
+.ticket-meta,
+span[class*="text-xs"],
+p[class*="text-xs"] {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  font-weight: 600;
+}
+
+/* Glassmorphism base fallback for elements */
+.glass {
+  background: rgba(33, 30, 29, 0.75) !important;
+  backdrop-filter: blur(12.5px) !important;
+  border: 1px solid rgba(158, 126, 83, 0.25) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+  border-radius: 12px;
+}
+
+.vintage-ticket-stub {
+  background: var(--card-bg) !important;
+  border: 1.5px solid rgba(158, 126, 83, 0.5) !important;
+  position: relative !important;
+  overflow: visible !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 22px 50px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 3px var(--card-bg),
+    inset 0 0 0 4.5px rgba(158, 126, 83, 0.25) !important;
+}
+
+.vintage-ticket-stub::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 6px !important;
+  border: 1.1px dashed rgba(158, 126, 83, 0.3) !important;
+  border-radius: 8px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+hr, 
+.vintage-dashed-divider,
+.ticket-dashed-line {
+  border-style: dotted !important;
+  border-width: 1.5px 0 0 0 !important;
+  border-color: rgba(158, 126, 83, 0.35) !important;
+  background: transparent !important;
+  height: 0 !important;
+  display: block !important;
+  clear: both !important;
+}
+
+button[class*="bg-black/40"] {
+  background-color: rgba(33, 30, 29, 0.75) !important;
+  border: 1.5px solid rgba(158, 126, 83, 0.45) !important;
+  color: #F5EFE4 !important;
+  opacity: 1 !important;
+}
+
+button[class*="bg-black/40"]:hover {
+  background-color: rgba(158, 126, 83, 0.2) !important;
+  border-color: #9E7E53 !important;
+  color: #FFFFFF !important;
+}
+
+input, select, textarea {
+  background-color: rgba(33, 30, 29, 0.8) !important;
+  border: 1.5px dashed rgba(158, 126, 83, 0.45) !important;
+  color: #F5EFE4 !important;
+  font-family: "Cormorant Garamond", Georgia, serif !important;
+  font-size: 14px !important;
+  letter-spacing: 0.02em !important;
+  border-radius: 8px !important;
+}
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid #9E7E53 !important;
+  outline: none !important;
+  box-shadow: 0 0 10px rgba(158, 126, 83, 0.22) !important;
+}
+
+[class*="text-[#00F2FF]"],
+[class*="text-neon-cyan"],
+.text-neon-cyan {
+  color: #CEBCA5 !important;
+}
+
+[class*="text-zinc-300"], [class*="text-gray-300"] {
+  color: rgba(245, 239, 228, 0.95) !important;
+}
+[class*="text-zinc-400"], [class*="text-gray-400"] {
+  color: rgba(245, 239, 228, 0.85) !important;
+}
+[class*="text-zinc-500"], [class*="text-gray-500"], .text-zinc-550 {
+  color: rgba(245, 239, 228, 0.72) !important;
+}
+[class*="text-zinc-600"], [class*="text-gray-600"] {
+  color: rgba(245, 239, 228, 0.6) !important;
+}
+
+[class*="text-white/30"] { color: rgba(245, 239, 228, 0.45) !important; }
+[class*="text-white/40"] { color: rgba(245, 239, 228, 0.62) !important; }
+[class*="text-white/50"] { color: rgba(245, 239, 228, 0.75) !important; }
+[class*="text-white/60"] { color: rgba(245, 239, 228, 0.82) !important; }
+[class*="text-white/70"] { color: rgba(245, 239, 228, 0.88) !important; }
+
+[class*="bg-[#00F2FF]"], [class*="bg-neon-cyan"], .bg-neon-cyan {
+  background-color: #9E7E53 !important;
+  color: #120F0D !important;
+  font-weight: 900 !important;
+}
+[class*="bg-[#00F2FF]"]:hover, [class*="bg-neon-cyan"]:hover {
+  background-color: #CEBEA5 !important;
+}
+
+[class*="border-[#00F2FF]"], [class*="border-neon-cyan"], .border-neon-cyan {
+  border-color: #9E7E53 !important;
+}
+
+[class*="text-[#FF00E5]"], [class*="text-neon-pink"], .text-neon-pink {
+  color: #CEBEA5 !important;
+}
+
+[class*="bg-[#FF00E5]"], [class*="bg-neon-pink"], .bg-neon-pink {
+  background-color: #CEBEA5 !important;
+  color: #120F0D !important;
+}
+[class*="bg-[#FF00E5]"]:hover, [class*="bg-[#FF00E5]"]:focus, [class*="bg-neon-pink"]:hover, [class*="bg-neon-pink"]:focus {
+  background-color: #9E7E53 !important;
+  color: #120F0D !important;
+}
+
+[class*="border-[#FF00E5]"], [class*="border-neon-pink"], .border-neon-pink {
+  border-color: #CEBEA5 !important;
+}
+
+[class*="accent-[#00F2FF]"] {
+  accent-color: #9E7E53 !important;
+}
+
+[class*="bg-[#050505]"], [class*="bg-[#060607]"], [class*="bg-[#09090b]"], [class*="bg-zinc-950"], [class*="bg-[#0D0D0E]"], [class*="bg-zinc-900"] {
+  background-color: var(--bg-dark) !important;
+}
+
+::selection, [class*="selection:bg-[#00F2FF]"]::selection {
+  background-color: #9E7E53 !important;
+  color: #120F0D !important;
+}
+
+.vintage-border-double { border: 3px double rgba(158, 126, 83, 0.3); }
+.vintage-border-dashed { border: 1px dashed rgba(158, 126, 83, 0.25); }
+
+.neon-border-cyan {
+  border-bottom: 2px solid var(--neon-cyan);
+  box-shadow: 0 4px 15px -3px rgba(158, 126, 83, 0.3);
+}
+
+.neon-glow-pink {
+  box-shadow: 0 0 25px rgba(206, 190, 165, 0.15);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ECE7DF 0%, #9E7E53 60%, #735A36 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ticket-hologram {
+  background: linear-gradient(135deg, rgba(158,126,83,0.08) 0%, rgba(206,190,165,0.06) 100%);
+  border: 1px dashed rgba(158, 126, 83, 0.3);
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes holographic-shine {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.hologram-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.01) 60%, rgba(255, 255, 255, 0.04) 100%);
+}
+
+.hologram-card::after {
+  content: '';
+  position: absolute;
+  top: -150%; left: -150%; width: 300%; height: 300%;
+  opacity: 0.12;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, rgba(147, 51, 234, 0.15) 30%, rgba(59, 130, 246, 0.18) 40%, rgba(236, 72, 153, 0.15) 50%, rgba(16, 185, 129, 0.15) 60%, transparent 80%);
+  background-size: 200% 200%;
+  mix-blend-mode: overlay;
+  transition: all 0.5s ease;
+  transform: rotate(-15deg);
+}
+
+.hologram-card:hover::after {
+  animation: holographic-shine 4s linear infinite;
+  opacity: 0.22;
+  transform: rotate(-10deg) scale(1.1);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #120F0D; }
+::-webkit-scrollbar-thumb { background: #3a322c; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #544940; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.ticket-cutout-left, .ticket-cutout-right { position: relative; }
+.ticket-cutout-left::before, .ticket-cutout-right::after { display: none !important; content: none !important; }
+
+@keyframes scanLaser {
+  0%, 100% { top: 10%; opacity: 0.6; }
+  50% { top: 90%; opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .font-mono, [class*="font-mono"], .ticket-meta {
+    letter-spacing: 0.05em !important;
+  }
+
+  span[class*="text-[9.5px]"], [class*="text-[9.5px]"] { font-size: 8.5px !important; letter-spacing: 0.04em !important; }
+  span[class*="text-[10.5px]"], [class*="text-[10.5px]"] { font-size: 9.5px !important; letter-spacing: 0.04em !important; }
+  span[class*="text-[10px]"], [class*="text-[10px]"], span[class*="text-[9px]"], [class*="text-[9px]"] { font-size: 8px !important; letter-spacing: 0.03em !important; }
+
+  h1, [class*="text-3xl"], [class*="text-4xl"] { font-size: 1.45rem !important; letter-spacing: 0.06em !important; }
+  h2, [class*="text-2xl"] { font-size: 1.22rem !important; letter-spacing: 0.05em !important; }
+  h3, [class*="text-xl"], [class*="text-lg"] { font-size: 1.02rem !important; letter-spacing: 0.04em !important; }
+  
+  .font-display { letter-spacing: 0.06em !important; }
+
+  .vintage-ticket-stub {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), inset 0 0 0 2px var(--card-bg), inset 0 0 0 3px rgba(158, 126, 83, 0.2) !important;
+  }
+  .vintage-ticket-stub::before {
+    inset: 4.5px !important; border-radius: 6px !important; border-width: 1.0px dashed rgba(158, 126, 83, 0.25) !important;
+  }
+  .vintage-ticket-stub h3 { font-size: 0.95rem !important; line-height: 1.25 !important; }
+  .vintage-ticket-stub .border-t { padding-top: 0.5rem !important; margin-top: 0.75rem !important; }
+}
+
+@media (max-width: 440px) {
+  h1, [class*="text-3xl"], [class*="text-4xl"], [class*="text-2xl"], h2 {
+    font-size: 1.12rem !important; letter-spacing: 0.04em !important;
+  }
+  button[class*="px-4.5"] {
+    padding: 0.5rem 0.7rem !important; font-size: 10px !important;
+  }
+  .vintage-ticket-stub p[class*="text-sm"] { font-size: 0.8rem !important; }
+}
+
+.reserve-option-row {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.reserve-option-row:hover {
+  border-color: #9E7E53 !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 15px rgba(158, 126, 83, 0.1) !important;
+}
+.reserve-option-row .reserve-btn {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(245, 239, 228, 0.7) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.reserve-option-row:hover .reserve-btn {
+  background-color: #9E7E53 !important;
+  color: #120F0D !important;
+  border-color: #9E7E53 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 12px rgba(158, 126, 83, 0.25) !important;
 }
