@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { usePlatform } from '@/context/PlatformContext';
 import { TicketTier, AdCustomizerConfig, EventItem } from '@/types';
 import { Plus, Trash2, Sliders, Palette, Layout, Sparkles, AlertCircle, ArrowLeft, ArrowRight, CheckCircle, Upload } from 'lucide-react';
@@ -168,6 +169,7 @@ export const SellEvent: React.FC<SellEventProps> = ({ onSuccess }) => {
       });
 
       setSuccess(true);
+      onSuccess();
     } catch (err: any) {
       setError(err.message || 'Error occurred while saving event.');
     }
@@ -196,7 +198,6 @@ export const SellEvent: React.FC<SellEventProps> = ({ onSuccess }) => {
     setSuccess(false);
     setStep(1);
     setError('');
-    onSuccess();
   };
 
   return (
@@ -701,9 +702,10 @@ export const SellEvent: React.FC<SellEventProps> = ({ onSuccess }) => {
 };
 
 export default function SellPage() {
+  const router = useRouter();
+
   const handleEventCreated = () => {
-    // Event successfully created - could show a success message or redirect
-    console.log('Event created successfully');
+    router.push('/explore');
   };
 
   return <SellEvent onSuccess={handleEventCreated} />;
