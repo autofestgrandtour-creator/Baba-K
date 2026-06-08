@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { usePlatform } from '@/context/PlatformContext';
 import { EventItem, TicketTier } from '@/types';
-import { X, ShieldAlert, CreditCard, Wallet, Smartphone, Landmark, CheckCircle, Ticket, ArrowRight, Loader2 } from 'lucide-react';
+import { X, CreditCard, Smartphone, Landmark, Loader2 } from 'lucide-react';
+
+const PaystackCheckoutButton = dynamic(
+  () => import('@/components/PaystackCheckoutButton').then(mod => mod.PaystackCheckoutButton),
+  { ssr: false }
+);
 
 interface CheckoutDrawerProps {
   isOpen: boolean;
@@ -14,10 +21,10 @@ interface CheckoutDrawerProps {
 }
 
 export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose, event, selectedTier, onSuccess }) => {
-  const { currentUser, settings, initializeCheckout } = usePlatform();
+  const { currentUser, settings } = usePlatform();
   const [qty, setQty] = useState(1);
-  const [buyerName, setBuyerName] = useState('');
-  const [buyerEmail, setBuyerEmail] = useState('');
+  const [buyerName, setBuyerName] = useState(currentUser?.fullName ?? '');
+  const [buyerEmail, setBuyerEmail] = useState(currentUser?.email ?? '');
   const [selectedGateway, setSelectedGateway] = useState<'paystack' | 'opay' | 'alatpay'>('paystack');
   const [error, setError] = useState('');
   
@@ -25,65 +32,12 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
   const [paymentState, setPaymentState] = useState<'idle' | 'processing'>('idle');
   const [processingStep, setProcessingStep] = useState('');
 
-  // Pre-fill fields if user is logged in
-  useEffect(() => {
-    if (currentUser) {
-      setBuyerName(currentUser.fullName);
-      setBuyerEmail(currentUser.email);
-    } else {
-      setBuyerName('');
-      setBuyerEmail('');
-    }
-    setQty(1);
-    setPaymentState('idle');
-    setError('');
-  }, [currentUser, isOpen]);
-
-  if (!isOpen || !event || !selectedTier) return null;
-
-  // Pricing calculations
-  const totalTicketPrice = selectedTier.price * qty;
+  // Calculate total amount for display
+  const totalTicketPrice = selectedTier ? selectedTier.price * qty : 0;
   const totalPlatformFees = settings.flatFee * qty;
   const grandTotal = totalTicketPrice + totalPlatformFees;
 
-  const handlePay = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!buyerName || !buyerEmail) {
-      setError('Please provide the Attendee Name and target Email.');
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(buyerEmail)) {
-      setError('Attendee email format is incorrect.');
-      return;
-    }
-    if (!currentUser) {
-      setError('Please sign in to complete this purchase.');
-      return;
-    }
-    if (selectedGateway !== 'paystack') {
-      setError('Live checkout currently supports Paystack only.');
-      return;
-    }
-
-    setPaymentState('processing');
-    setProcessingStep('Creating payment session...');
-
-    try {
-      const { authorization_url } = await initializeCheckout(event.id, selectedTier.name, selectedTier.id);
-      window.open(authorization_url, '_blank');
-      setProcessingStep('Paystack checkout opened in a new tab. Complete your payment there.');
-    } catch (err: any) {
-      setError(err.message || 'Payment initialization failed. Please try again.');
-      setPaymentState('idle');
-    }
-  };
-
-  const handleCloseAndRefresh = () => {
-    onSuccess();
-    onClose();
-  };
+  if (!isOpen || !event || !selectedTier) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm transition-all duration-300">
@@ -102,6 +56,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
           </div>
           <button
             onClick={onClose}
+            aria-label="Close checkout drawer"
             className="text-white/40 hover:text-white rounded-full p-2 glass transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -117,14 +72,16 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
 
         {/* --- MAIN CHECKOUT / SELECTION SCENE --- */}
         {paymentState === 'idle' && (
-          <form onSubmit={handlePay} className="flex-grow flex flex-col justify-between space-y-6">
+          <div className="flex-grow flex flex-col justify-between space-y-6">
             
             <div className="space-y-5">
               {/* Event card minimal view */}
               <div className="flex gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/5">
-                <img
+                <Image
                   src={event.flyerUrl}
                   alt={event.title}
+                  width={64}
+                  height={64}
                   className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover shrink-0 opacity-80"
                   referrerPolicy="no-referrer"
                 />
@@ -147,6 +104,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => setQty(Math.max(1, qty - 1))}
+                    aria-label="Decrease ticket quantity"
                     className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white text-base font-bold border border-white/10 cursor-pointer"
                   >
                     -
@@ -155,6 +113,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => setQty(Math.min(5, qty + 1))}
+                    aria-label="Increase ticket quantity"
                     className="h-8 w-8 flex items-center justify-center rounded-full bg-white text-black text-base font-bold cursor-pointer"
                   >
                     +
@@ -257,17 +216,22 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                 </div>
               </div>
 
-              <button
-                type="submit"
-                id="checkout-pay-btn"
-                className="w-full py-4 bg-[#00F2FF] text-black font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-[#00F2FF]/20 hover:bg-[#00d6e0] transition-colors cursor-pointer flex items-center justify-center gap-2"
-              >
-                <span>Pay with {selectedGateway === 'paystack' ? 'Paystack' : selectedGateway === 'opay' ? 'OPay' : 'AlatPay'}</span>
-                <ArrowRight className="h-4 w-4 shrink-0 font-bold" />
-              </button>
+              <PaystackCheckoutButton
+                event={event}
+                tier={selectedTier}
+                qty={qty}
+                buyerName={buyerName}
+                buyerEmail={buyerEmail}
+                selectedGateway={selectedGateway}
+                setError={setError}
+                setPaymentState={setPaymentState}
+                setProcessingStep={setProcessingStep}
+                onSuccess={onSuccess}
+                onClose={onClose}
+              />
             </div>
 
-          </form>
+          </div>
         )}
 
         {/* --- PAYMENT PROCESSING ACTIVE OVERLAY SCREEN (ZERO REDIRECT) --- */}

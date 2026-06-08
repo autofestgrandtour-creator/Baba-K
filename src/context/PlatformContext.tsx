@@ -32,6 +32,8 @@ interface PlatformContextType {
   verifyOrganizerEmail: (email: string) => Promise<void>;
   addReview: (eventId: string, rating: number, comment: string) => Promise<void>;
   validateTicket: (qrCodeOrSerial: string) => Promise<{ success: boolean; message: string; ticket?: PurchasedTicket }>;
+  refreshTickets: () => Promise<void>;
+  ticketRefreshVersion: number;
 }
 
 const PlatformContext = createContext<PlatformContextType | undefined>(undefined);
@@ -113,6 +115,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [events, setEvents] = useState<EventItem[]>([]);
   const [tickets, setTickets] = useState<PurchasedTicket[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [ticketRefreshVersion, setTicketRefreshVersion] = useState(0);
   const [settings, setSettingsVal] = useState<SystemSettings>(() => {
     if (typeof window === 'undefined') return INITIAL_SETTINGS;
     const saved = localStorage.getItem('babak_settings');
@@ -284,6 +287,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await loadReviews();
   };
 
+  const refreshTickets = async () => {
+    await loadTickets();
+    setTicketRefreshVersion(prev => prev + 1);
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     refreshPlatformData();
@@ -336,20 +344,25 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       throw new Error('You must be signed in to create events.');
     }
 
-    const response = await fetch('/api/events/create', {
+    const response = await fetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        organizer_id: currentUser.id,
+        organizerId: currentUser.id,
         title: newEvent.title,
         description: newEvent.description,
         location: newEvent.venue,
-        event_date: newEvent.date,
-        flyer_url: newEvent.flyerUrl,
-        ticket_tiers: newEvent.ticketsConfig.map((tier) => ({
+        eventDate: newEvent.date,
+        time: newEvent.time,
+        flyerUrl: newEvent.flyerUrl,
+        category: newEvent.category,
+        isPromoted: newEvent.adCustomizer.promote,
+        ticketTiers: newEvent.ticketsConfig.map((tier) => ({
           name: tier.name,
           price: tier.price,
           capacity: tier.capacity,
+          visibility: tier.visibility,
+          soldCount: tier.soldCount ?? 0,
         }))
       })
     });
@@ -670,7 +683,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       toggleUserSuspension,
       verifyOrganizerEmail,
       addReview,
-      validateTicket
+      validateTicket,
+      refreshTickets,
+      ticketRefreshVersion
     }}>
       {children}
     </PlatformContext.Provider>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePlatform } from '@/context/PlatformContext';
 import { PremiumTicket } from '@/components/PremiumTicket';
 import { PurchasedTicket } from '@/types';
@@ -9,8 +9,11 @@ import { TicketScanner } from '@/components/TicketScanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const WalletView: React.FC = () => {
-  const { currentUser, tickets, events, listTicketForResale, cancelResale } = usePlatform();
-  
+  const { currentUser, events, ticketRefreshVersion, listTicketForResale, cancelResale } = usePlatform();
+  const [walletTickets, setWalletTickets] = useState<PurchasedTicket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [walletError, setWalletError] = useState('');
+
   // Track selected active ticket for details modal / secondary inspection
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
@@ -26,24 +29,55 @@ export const WalletView: React.FC = () => {
   // Filter tickets to only show those owned by the active user session!
   const userTickets = useMemo(() => {
     if (!currentUser) return [];
-    return tickets.filter(tkt => tkt.buyerEmail.toLowerCase() === currentUser.email.toLowerCase());
-  }, [tickets, currentUser]);
+    return walletTickets.filter(tkt => tkt.buyerEmail.toLowerCase() === currentUser.email.toLowerCase());
+  }, [walletTickets, currentUser]);
 
   const activeTicketInfo = useMemo(() => {
     if (!selectedTicketId) return null;
-    const ticket = tickets.find(t => t.id === selectedTicketId);
+    const ticket = walletTickets.find(t => t.id === selectedTicketId);
     if (!ticket) return null;
     const event = events.find(e => e.id === ticket.eventId);
     return { ticket, event };
-  }, [tickets, events, selectedTicketId]);
+  }, [walletTickets, events, selectedTicketId]);
 
   const resaleTicketDetails = useMemo(() => {
     if (!resaleTicketId) return null;
-    const ticket = tickets.find(t => t.id === resaleTicketId);
+    const ticket = walletTickets.find(t => t.id === resaleTicketId);
     if (!ticket) return null;
     const event = events.find(e => e.id === ticket.eventId);
     return { ticket, event };
-  }, [tickets, events, resaleTicketId]);
+  }, [walletTickets, events, resaleTicketId]);
+
+  const fetchWalletTickets = async (email: string) => {
+    setTicketsLoading(true);
+    setWalletError('');
+
+    try {
+      const response = await fetch(`/api/tickets?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Unable to load ticket wallet.');
+      }
+
+      setWalletTickets(data.tickets || []);
+    } catch (error: any) {
+      console.error('Wallet fetch failed:', error);
+      setWalletError(error?.message || 'Unable to load ticket wallet.');
+      setWalletTickets([]);
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      setWalletTickets([]);
+      return;
+    }
+
+    fetchWalletTickets(currentUser.email);
+  }, [currentUser?.email, ticketRefreshVersion]);
 
   const handleListResale = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +112,12 @@ export const WalletView: React.FC = () => {
         <h2 className="font-display text-2xl font-black uppercase tracking-tight text-white">Your Wallet</h2>
         <p className="text-sm text-white/40">Access verified ticket QR codes for scanning gates, and configure resale listings.</p>
       </div>
+
+      {walletError && (
+        <div className="rounded-2xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-200">
+          {walletError}
+        </div>
+      )}
 
       {/* 2. SENTRY DOOR SCANNER FOR ORGANIZERS / ADMINS */}
       {currentUser && (currentUser.role === 'Organizer' || currentUser.role === 'Admin') && (
@@ -117,6 +157,12 @@ export const WalletView: React.FC = () => {
           <WalletIcon className="h-10 w-10 text-white/30 mx-auto mb-3" />
           <h4 className="font-display font-medium text-white/60 uppercase">Device Wallet Locked</h4>
           <p className="text-xs text-white/40 max-w-sm mx-auto mt-1">Please sign in and authorize sandbox credentials to access verified event ticket items.</p>
+        </div>
+      ) : ticketsLoading ? (
+        <div className="text-center py-16 rounded-2xl border border-dashed border-white/10 bg-white/5">
+          <WalletIcon className="h-10 w-10 text-white/30 mx-auto mb-3 animate-pulse" />
+          <h4 className="font-display font-medium text-white/60 uppercase">Loading Wallet...</h4>
+          <p className="text-xs text-white/40 max-w-sm mx-auto mt-1">Fetching your verified tickets from the live database.</p>
         </div>
       ) : userTickets.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-white/10 bg-white/5">

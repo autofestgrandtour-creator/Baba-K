@@ -485,7 +485,7 @@ const XIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 function ExplorePageWrapper() {
-  const { currentUser } = usePlatform();
+  const { currentUser, refreshTickets } = usePlatform();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<{ event: EventItem; tier: TicketTier } | null>(null);
@@ -504,7 +504,12 @@ function ExplorePageWrapper() {
     setAuthModalOpen(true);
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = async () => {
+    try {
+      await refreshTickets();
+    } catch (error) {
+      console.error('Unable to refresh tickets after purchase:', error);
+    }
     setCheckoutOpen(false);
     setCheckoutData(null);
   };
