@@ -430,27 +430,43 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const listTicketForResale = async (ticketId: string, price: number) => {
     try {
-      const { error } = await supabase.from('purchased_tickets').update({ is_reselling: true, resale_price: price }).eq('id', ticketId);
-      if (error) {
-        console.error('Failed to list ticket for resale', error);
-        return;
+      const response = await fetch('/api/tickets/resell', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, resalePrice: price, isReselling: true })
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        const message = payload.error || 'Failed to list ticket for resale.';
+        throw new Error(message);
       }
+
       await loadTickets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('listTicketForResale error', error);
+      throw error;
     }
   };
 
   const cancelResale = async (ticketId: string) => {
     try {
-      const { error } = await supabase.from('purchased_tickets').update({ is_reselling: false, resale_price: null }).eq('id', ticketId);
-      if (error) {
-        console.error('Failed to cancel resale', error);
-        return;
+      const response = await fetch('/api/tickets/resell', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, isReselling: false })
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        const message = payload.error || 'Failed to cancel resale.';
+        throw new Error(message);
       }
+
       await loadTickets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('cancelResale error', error);
+      throw error;
     }
   };
 

@@ -91,13 +91,17 @@ export const WalletView: React.FC = () => {
       return;
     }
 
-    await listTicketForResale(resaleTicketId, priceNum);
-    setResaleSuccess(true);
-    setTimeout(() => {
-      setResaleSuccess(false);
-      setResaleTicketId(null);
-      setResalePrice('');
-    }, 1800);
+    try {
+      await listTicketForResale(resaleTicketId, priceNum);
+      setResaleSuccess(true);
+      setTimeout(() => {
+        setResaleSuccess(false);
+        setResaleTicketId(null);
+        setResalePrice('');
+      }, 1800);
+    } catch (error: any) {
+      setResaleError(error?.message || 'Unable to list ticket for resale.');
+    }
   };
 
   const handleSimulateDownload = () => {
@@ -251,7 +255,13 @@ export const WalletView: React.FC = () => {
 
                     {activeTicketInfo.ticket.isReselling ? (
                       <button
-                        onClick={() => cancelResale(activeTicketInfo.ticket.id)}
+                        onClick={async () => {
+                          try {
+                            await cancelResale(activeTicketInfo.ticket.id);
+                          } catch (error) {
+                            console.error('Cancel resale error', error);
+                          }
+                        }}
                         className="flex-1 py-3 bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-900/40 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <X className="h-3.5 w-3.5" />
