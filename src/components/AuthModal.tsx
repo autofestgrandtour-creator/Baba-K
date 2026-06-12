@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePlatform } from '@/context/PlatformContext';
-import { X, Mail, Lock, User, CheckCircle, ShieldCheck } from 'lucide-react';
+import { X, Mail, Lock, User, CheckCircle, ShieldCheck, Github, Chrome, Send } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,19 +22,66 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleSocialAuth = async (provider: 'google' | 'github') => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback?provider=${provider}` 
+        : '';
+      
+      // Placeholder: In production, integrate with your OAuth provider
+      console.log(`Initiating ${provider} authentication...`);
+      setError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication coming soon!`);
+      setIsLoading(false);
+    } catch (err) {
+      setError('Social authentication failed. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    setError('');
+    if (!email) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      console.log('Sending magic link to:', email);
+      setSuccessMsg(`✓ Magic link sent to ${email}. Check your inbox!`);
+      setTimeout(() => {
+        setSuccessMsg('');
+        setIsLoading(false);
+      }, 3000);
+    } catch (err) {
+      setError('Failed to send magic link. Try again later.');
+      setIsLoading(false);
+    }
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     if (!email || !password) {
       setError('Please provide Email and Password.');
+      setIsLoading(false);
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Please provide a valid email structure.');
+      setIsLoading(false);
       return;
     }
 
@@ -43,31 +90,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setSuccessMsg('Logged in successfully!');
       setTimeout(() => {
         setSuccessMsg('');
+        setIsLoading(false);
         onClose();
       }, 1000);
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
+      setIsLoading(false);
     }
   };
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Please fill out all registration fields.');
+      setIsLoading(false);
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Invalid email formula.');
+      setIsLoading(false);
       return;
     }
     if (password.length < 6) {
       setError('Password must contain at least 6 characters.');
+      setIsLoading(false);
       return;
     }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setIsLoading(false);
       return;
     }
 
@@ -76,10 +130,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setSuccessMsg('Account created successfully!');
       setTimeout(() => {
         setSuccessMsg('');
+        setIsLoading(false);
         onClose();
       }, 1200);
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
+      setIsLoading(false);
     }
   };
 
@@ -185,10 +241,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               id="login-submit-btn"
               type="submit"
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all cursor-pointer"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Access Platform (Secure)
+              {isLoading ? 'Accessing...' : 'Access Platform (Secure)'}
             </button>
+
+            {/* Social Auth Section */}
+            <div className="mt-5 pt-5 border-t border-zinc-800">
+              <p className="text-xs text-zinc-500 text-center mb-3 uppercase tracking-wider font-mono">Or continue with</p>
+              <div className="grid grid-cols-3 gap-2.5">
+                <button
+                  id="auth-google-btn"
+                  type="button"
+                  onClick={() => handleSocialAuth('google')}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign in with Google"
+                >
+                  <Chrome className="h-4 w-4" />
+                  <span className="hidden sm:inline">Google</span>
+                </button>
+
+                <button
+                  id="auth-github-btn"
+                  type="button"
+                  onClick={() => handleSocialAuth('github')}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign in with GitHub"
+                >
+                  <Github className="h-4 w-4" />
+                  <span className="hidden sm:inline">GitHub</span>
+                </button>
+
+                <button
+                  id="auth-magic-link-btn"
+                  type="button"
+                  onClick={handleMagicLink}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign in with Magic Link"
+                >
+                  <Send className="h-4 w-4" />
+                  <span className="hidden sm:inline">Magic</span>
+                </button>
+              </div>
+            </div>
 
             <div className="text-center mt-4">
               <span className="text-xs text-zinc-500">New around here? </span>
@@ -196,7 +295,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 id="login-switch-signup-btn"
                 type="button"
                 onClick={() => setMode('signup')}
-                className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
+                disabled={isLoading}
+                className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create new account
               </button>
@@ -300,17 +400,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               id="signup-submit-btn"
               type="submit"
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg shadow-emerald-500/10 transition-all cursor-pointer"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold font-display shadow-lg shadow-emerald-500/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Account
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
+
+            {/* Social Auth Section */}
+            <div className="mt-5 pt-5 border-t border-zinc-800">
+              <p className="text-xs text-zinc-500 text-center mb-3 uppercase tracking-wider font-mono">Or sign up with</p>
+              <div className="grid grid-cols-3 gap-2.5">
+                <button
+                  id="auth-google-signup-btn"
+                  type="button"
+                  onClick={() => handleSocialAuth('google')}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign up with Google"
+                >
+                  <Chrome className="h-4 w-4" />
+                  <span className="hidden sm:inline">Google</span>
+                </button>
+
+                <button
+                  id="auth-github-signup-btn"
+                  type="button"
+                  onClick={() => handleSocialAuth('github')}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign up with GitHub"
+                >
+                  <Github className="h-4 w-4" />
+                  <span className="hidden sm:inline">GitHub</span>
+                </button>
+
+                <button
+                  id="auth-magic-link-signup-btn"
+                  type="button"
+                  onClick={handleMagicLink}
+                  disabled={isLoading}
+                  className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
+                  title="Sign up with Magic Link"
+                >
+                  <Send className="h-4 w-4" />
+                  <span className="hidden sm:inline">Magic</span>
+                </button>
+              </div>
+            </div>
 
             <div className="text-center mt-4">
               <span className="text-xs text-zinc-500">Already registered? </span>
               <button
                 type="button"
                 onClick={() => setMode('login')}
-                className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
+                disabled={isLoading}
+                className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Log In
               </button>

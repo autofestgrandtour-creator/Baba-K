@@ -162,8 +162,7 @@ export function PaystackCheckoutButton({
     try {
       initializePayment({ 
         onSuccess: onSuccessCallback, 
-        onClose: onCloseCallback,
-        onError: onErrorCallback
+        onClose: onCloseCallback
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment.';
