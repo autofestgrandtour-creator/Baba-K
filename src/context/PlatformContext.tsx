@@ -105,10 +105,14 @@ const mapPurchasedTicket = (purchase: any, transaction: any, buyer: any, ticketT
 });
 
 export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUserVal] = useState<UserSession | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('babak_current_user');
-    return saved ? JSON.parse(saved) : null;
+ // DEVELOPER BYPASS: Forcing the app to treat you as a logged-in Organizer
+  const [currentUser, setCurrentUserVal] = useState<UserSession | null>({
+    id: "00000000-0000-0000-0000-000000000000", // Dummy UUID 
+    email: "admin@baba-k.com",
+    fullName: "Baba K Admin",
+    role: "Organizer",
+    isVerifiedOrganizer: true,
+    isSuspended: false
   });
 
   const [users, setUsers] = useState<UserSession[]>([]);
