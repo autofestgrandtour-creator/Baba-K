@@ -11,6 +11,8 @@ export async function POST(request: Request) {
       location, 
       event_date, 
       flyer_url,
+      category,
+      is_promoted = false,
       ticket_tiers // Array of objects e.g., [{ name: 'VIP', price: 50000, capacity: 100 }]
     } = body;
 
@@ -20,27 +22,21 @@ export async function POST(request: Request) {
     }
 
     // 2. Insert the Event into the 'events' table
-    // Replace your current insert block with this logic:
-
-// 1. Combine the date and time strings into one valid database timestamp
-const combinedDateTime = new Date(`${eventDate}T${time || '00:00'}:00`).toISOString();
-
-// 2. Insert into Supabase (Notice 'time' is completely removed here)
-const { data: newEvent, error: eventError } = await supabase
-  .from('events')
-  .insert({
-    organizer_id: organizerId,
-    title,
-    description,
-    location,
-    event_date: combinedDateTime, // <--- Merged date and time here
-    flyer_url: flyerUrl,
-    category,
-    is_promoted: isPromoted,
-    state: 'active'
-  })
-  .select()
-  .single();
+    const { data: newEvent, error: eventError } = await supabase
+      .from('events')
+      .insert({
+        organizer_id,
+        title,
+        description,
+        location,
+        event_date,
+        flyer_url,
+        category,
+        is_promoted,
+        state: 'active'
+      })
+      .select()
+      .single();
 
     if (eventError || !newEvent) {
       console.error('Event Insert Error:', eventError);
