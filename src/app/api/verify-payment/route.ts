@@ -3,19 +3,23 @@ import { supabase } from '@/utils/supabase';
 
 export async function POST(request: Request) {
   try {
-    const { reference, email, eventId, tierName, price, quantity = 1, buyerName } = await request.json();
+    const { reference, email, eventId, tierName, price, quantity = 1, buyerName, isFree } = await request.json();
 
-    if (!reference || !email || !eventId || !tierName || !price) {
+    if (!reference || !email || !eventId || !tierName) {
       return NextResponse.json({ success: false, message: 'Missing payment verification payload.' }, { status: 400 });
     }
 
-    const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` }
-    });
-    const paymentData = await verifyResponse.json();
+    // Verify payment with Paystack (unless it's a free ticket)
+    let paymentData: any = null;
+    if (!isFree && price > 0) {
+      const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` }
+      });
+      paymentData = await verifyResponse.json();
 
-    if (!paymentData.status || paymentData.data.status !== 'success') {
-      return NextResponse.json({ success: false, message: 'Payment verification failed.' }, { status: 400 });
+      if (!paymentData.status || paymentData.data.status !== 'success') {
+        return NextResponse.json({ success: false, message: 'Payment verification failed.' }, { status: 400 });
+      }
     }
 
     const { data: userRecord, error: userError } = await supabase
@@ -60,14 +64,14 @@ export async function POST(request: Request) {
 
     const ticketRows = Array.from({ length: quantity }, (_, i) => ({
       buyer_email: email,
-      buyer_name: buyerName || paymentData.data.customer.first_name || 'Guest',
+      buyer_name: buyerName || (paymentData?.data?.customer?.first_name ?? 'Guest'),
       event_id: eventId,
       ticket_type_id: ticketTypeRecord.id,
-      price_paid: price,
+      price_paid: price || 0,
       fee_paid: 0,
       serial_number: `NBK-${reference}-${i + 1}`,
       qr_code_hash: `BABAK-${reference}-${i + 1}`,
-      payment_gateway: 'paystack',
+      payment_gateway: isFree ? 'free' : 'paystack',
       transaction_id: transactionRecord.id,
     }));
 

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { EventItem, PurchasedTicket, SystemSettings, UserSession, TicketTier, ReviewItem } from '@/types';
-import { INITIAL_SETTINGS } from '@/mockData';
+import { INITIAL_SETTINGS, INITIAL_EVENTS, INITIAL_TICKETS, INITIAL_REVIEWS, MOCK_USERS } from '@/mockData';
 
 interface PlatformContextType {
   currentUser: UserSession | null;
@@ -157,21 +157,25 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('id,email,full_name,role,is_verified,is_suspended');
 
       if (error) {
-        console.error('Failed to fetch users', error);
+        console.warn('Failed to fetch users from Supabase, using mock data:', error);
+        setUsers(MOCK_USERS);
         return;
       }
 
       const normalized = (data || []).map(normalizeUser);
-      setUsers(normalized);
+      // Fallback to mock data if database is empty
+      const users = normalized && normalized.length > 0 ? normalized : MOCK_USERS;
+      setUsers(users);
 
       if (currentUser?.email && !currentUser.id) {
-        const matching = normalized.find(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+        const matching = users.find(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
         if (matching) {
           setCurrentUser(matching);
         }
       }
     } catch (error) {
-      console.error('users load error', error);
+      console.warn('users load error, using mock data:', error);
+      setUsers(MOCK_USERS);
     }
   };
 
@@ -182,16 +186,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('id,title,description,location,event_date,flyer_url,is_promoted,state,category,organizer_id,ticket_types(id,name,price,capacity,sold_count,visibility)');
 
       if (error) {
-        console.error('Failed to fetch events', error);
-        setEvents([]);
+        console.warn('Failed to fetch events from Supabase, using mock data:', error);
+        setEvents(INITIAL_EVENTS);
         return;
       }
 
       const items = (data || []).map(mapEventRow);
-      setEvents(items);
+      // Fallback to mock data if database is empty
+      setEvents(items && items.length > 0 ? items : INITIAL_EVENTS);
     } catch (error) {
-      console.error('events load error', error);
-      setEvents([]);
+      console.warn('events load error, using mock data:', error);
+      setEvents(INITIAL_EVENTS);
     }
   };
 
@@ -202,12 +207,18 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('id,qr_code_hash,serial_number,is_validated,validated_at,created_at,transaction_id,ticket_type_id,is_reselling,resale_price');
 
       if (purchaseError) {
-        console.error('Failed to fetch purchased tickets', purchaseError);
-        setTickets([]);
+        console.warn('Failed to fetch purchased tickets, using mock data:', purchaseError);
+        setTickets(INITIAL_TICKETS);
         return;
       }
 
       const purchaseRows = purchases || [];
+      if (!purchaseRows || purchaseRows.length === 0) {
+        console.log('No tickets in database, using mock data');
+        setTickets(INITIAL_TICKETS);
+        return;
+      }
+
       const transactionIds = purchaseRows.map((purchase: any) => purchase.transaction_id).filter(Boolean);
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
@@ -215,7 +226,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .in('id', transactionIds);
 
       if (txError) {
-        console.error('Failed to fetch transactions', txError);
+        console.warn('Failed to fetch transactions', txError);
       }
 
       const ticketTypeIds = purchaseRows.map((purchase: any) => purchase.ticket_type_id).filter(Boolean);
@@ -225,7 +236,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .in('id', ticketTypeIds);
 
       if (typesError) {
-        console.error('Failed to fetch ticket types', typesError);
+        console.warn('Failed to fetch ticket types', typesError);
       }
 
       const buyerIds = (transactions || []).map((tx: any) => tx.buyer_id).filter(Boolean);
@@ -235,7 +246,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .in('id', buyerIds);
 
       if (usersError) {
-        console.error('Failed to fetch ticket buyers', usersError);
+        console.warn('Failed to fetch ticket buyers', usersError);
       }
 
       const txMap = new Map((transactions || []).map((tx: any) => [tx.id, tx]));
@@ -252,10 +263,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
         .filter((ticket: PurchasedTicket | null): ticket is PurchasedTicket => ticket !== null);
 
-      setTickets(records);
+      setTickets(records && records.length > 0 ? records : INITIAL_TICKETS);
     } catch (error) {
-      console.error('tickets load error', error);
-      setTickets([]);
+      console.warn('tickets load error, using mock data:', error);
+      setTickets(INITIAL_TICKETS);
     }
   };
 
@@ -264,7 +275,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     for (const table of tryTables) {
       try {
         const { data, error } = await supabase.from(table).select('*');
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           const mapped = data.map((row: any) => ({
             id: row.id?.toString() ?? `rev-${Date.now()}`,
             eventId: row.event_id || row.eventId || '',
@@ -278,10 +289,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return;
         }
       } catch (err) {
-        console.error(`Failed to fetch reviews from table ${table}`, err);
+        console.warn(`Failed to fetch reviews from table ${table}`, err);
       }
     }
-    setReviews([]);
+    console.log('No reviews in database, using mock data');
+    setReviews(INITIAL_REVIEWS);
   };
 
   const refreshPlatformData = async () => {
