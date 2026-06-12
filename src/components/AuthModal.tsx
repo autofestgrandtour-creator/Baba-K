@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePlatform } from '@/context/PlatformContext';
-import { X, Mail, Lock, User, CheckCircle, ShieldCheck, Github, Chrome, Send } from 'lucide-react';
+import { X, Mail, Lock, User, CheckCircle, ShieldCheck, GitBranch, Globe, Send } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -259,7 +259,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
                   title="Sign in with Google"
                 >
-                  <Chrome className="h-4 w-4" />
+                  <Globe className="h-4 w-4" />
                   <span className="hidden sm:inline">Google</span>
                 </button>
 
@@ -271,7 +271,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
                   title="Sign in with GitHub"
                 >
-                  <Github className="h-4 w-4" />
+                  <GitBranch className="h-4 w-4" />
                   <span className="hidden sm:inline">GitHub</span>
                 </button>
 
@@ -418,7 +418,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
                   title="Sign up with Google"
                 >
-                  <Chrome className="h-4 w-4" />
+                  <Globe className="h-4 w-4" />
                   <span className="hidden sm:inline">Google</span>
                 </button>
 
@@ -430,7 +430,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="flex items-center justify-center py-2.5 px-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer gap-1.5"
                   title="Sign up with GitHub"
                 >
-                  <Github className="h-4 w-4" />
+                  <GitBranch className="h-4 w-4" />
                   <span className="hidden sm:inline">GitHub</span>
                 </button>
 
